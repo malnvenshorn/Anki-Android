@@ -71,4 +71,15 @@
             android:name="subscreen"
             android:value="com.ichi2.anki.prefs.advanced" />
     </header>
+
+    <!-- Extension Preferences -->
+    <header
+        android:fragment="com.ichi2.anki.Preferences$SettingsFragment"
+        android:key="pref_screen_extensions"
+        android:summary="@string/pref_cat_extensions_summ"
+        android:title="@string/pref_cat_extensions">
+        <extra
+            android:name="subscreen"
+            android:value="com.ichi2.anki.prefs.extensions" />
+    </header>
 </preference-headers>

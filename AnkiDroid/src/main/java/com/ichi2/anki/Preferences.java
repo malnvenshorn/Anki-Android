@@ -334,6 +334,8 @@ public class Preferences extends AppCompatPreferenceActivity implements Preferen
                 getSupportActionBar().setTitle(R.string.advanced_statistics_title);
                 listener.addPreferencesFromResource(R.xml.preferences_advanced_statistics);
                 break;
+            case "com.ichi2.anki.prefs.extensions":
+                listener.addPreferencesFromResource(R.xml.preferences_extensions);
         }
     }
 

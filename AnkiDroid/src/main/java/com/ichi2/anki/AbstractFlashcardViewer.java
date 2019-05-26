@@ -47,6 +47,7 @@ import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.TextUtils;
 import android.text.style.UnderlineSpan;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
@@ -143,6 +144,15 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     public static final int EASE_3 = 3;
     public static final int EASE_4 = 4;
 
+    /** Ease mapping for two button mode */
+    private static final SparseArray<int[]> TWO_BUTTON_EASE_MAP = new SparseArray<int[]>() {
+        {
+            put(2, new int[] {0, EASE_1, EASE_2, EASE_2, EASE_2});
+            put(3, new int[] {0, EASE_1, EASE_2, EASE_2, EASE_2});
+            put(4, new int[] {0, EASE_1, EASE_3, EASE_3, EASE_3});
+        }
+    };
+
     /** Maximum time in milliseconds to wait before accepting answer button presses. */
     private static final int DOUBLE_TAP_IGNORE_THRESHOLD = 200;
 
@@ -186,6 +196,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     private boolean mDoubleScrolling;
     private boolean mScrollingButtons;
     private boolean mGesturesEnabled;
+    private boolean mTwoButtonModeEnabled;
     // Android WebView
     protected boolean mSpeakText;
     protected boolean mDisableClipboard = false;
@@ -1222,6 +1233,20 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     }
 
 
+    private int mappedEase(int ease) {
+        if (mTwoButtonModeEnabled) {
+            // If in low key mode we have to remap the selected ease, because we only hide the buttons
+            // at the moment, but selection scan also be made with gestures
+            int buttonCount = mSched.answerButtons(mCurrentCard);
+            int mappedEase = TWO_BUTTON_EASE_MAP.get(buttonCount)[ease];
+            Timber.i("TwoButtonMode enabled, mapping selected ease to %d", mappedEase);
+            return mappedEase;
+        } else {
+            return ease;
+        }
+    }
+
+
     protected void answerCard(int ease) {
         if (mInAnswer) {
             return;
@@ -1264,7 +1289,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mTimerHandler.removeCallbacks(removeChosenAnswerText);
         mTimerHandler.postDelayed(removeChosenAnswerText, mShowChosenAnswerLength);
         mSoundPlayer.stopSounds();
-        mCurrentEase = ease;
+        mCurrentEase = mappedEase(ease);
 
         DeckTask.launchDeckTask(DeckTask.TASK_TYPE_ANSWER_CARD, mAnswerCardHandler,
                 new DeckTask.TaskData(mCurrentCard, mCurrentEase));
@@ -1553,12 +1578,17 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mFlipCardLayout.setVisibility(View.GONE);
 
         int buttonCount;
-        try {
-            buttonCount = mSched.answerButtons(mCurrentCard);
-        } catch (RuntimeException e) {
-            AnkiDroidApp.sendExceptionReport(e, "AbstractReviewer-showEaseButtons");
-            closeReviewer(DeckPicker.RESULT_DB_ERROR, true);
-            return;
+
+        if (mTwoButtonModeEnabled) {
+            buttonCount = 2;
+        } else {
+            try {
+                buttonCount = mSched.answerButtons(mCurrentCard);
+            } catch (RuntimeException e) {
+                AnkiDroidApp.sendExceptionReport(e, "AbstractReviewer-showEaseButtons");
+                closeReviewer(DeckPicker.RESULT_DB_ERROR, true);
+                return;
+            }
         }
 
         // Set correct label and background resource for each button
@@ -1746,6 +1776,8 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mCustomButtons.put(R.id.action_bury, Integer.parseInt(preferences.getString("customButtonBury", Integer.toString(MenuItem.SHOW_AS_ACTION_NEVER))));
         mCustomButtons.put(R.id.action_suspend, Integer.parseInt(preferences.getString("customButtonSuspend", Integer.toString(MenuItem.SHOW_AS_ACTION_NEVER))));
         mCustomButtons.put(R.id.action_delete, Integer.parseInt(preferences.getString("customButtonDelete", Integer.toString(MenuItem.SHOW_AS_ACTION_NEVER))));
+
+        mTwoButtonModeEnabled = preferences.getBoolean("twoButtonMode", false);
 
         if (preferences.getBoolean("keepScreenOn", false)) {
             this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -1948,6 +1980,18 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
             if (delay > 0) {
                 mTimeoutHandler.removeCallbacks(mShowAnswerTask);
                 mTimeoutHandler.postDelayed(mShowAnswerTask, delay);
+            }
+        }
+
+        // If two button mode is enabled we reset the ease factor,
+        // so that hitting the again button doesn't result in a penalty
+        if (mTwoButtonModeEnabled) {
+            try {
+                int factor = getConfigForCurrentCard().getJSONObject("new").optInt("initialFactor");
+                Timber.i("TwoButtonMode enabled, resetting the card ease factor to %d", factor);
+                mCurrentCard.setFactor(factor);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
         }
 

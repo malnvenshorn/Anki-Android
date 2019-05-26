@@ -253,4 +253,10 @@
     <string name="analytics_dialog_title">Help make AnkiDroid better!</string>
     <string name="analytics_title">Share feature usage</string>
     <string name="analytics_summ">You can contribute to AnkiDroid by helping the development team see which features people use</string>
+
+    <!-- extensions -->
+    <string name="pref_cat_extensions">Extensions</string>
+    <string name="pref_cat_extensions_summ">Features added by this fork</string>
+    <string name="ext_two_button_mode">Two button mode</string>
+    <string name="ext_two_button_mode_summ">Remove the hard and easy button (also disables the ease factor penalty when selecting hard)</string>
 "</resources>
