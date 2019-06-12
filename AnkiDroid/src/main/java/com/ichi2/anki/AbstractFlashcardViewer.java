@@ -197,6 +197,9 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     private boolean mScrollingButtons;
     private boolean mGesturesEnabled;
     private boolean mTwoButtonModeEnabled;
+    private boolean mAutoAdjustEaseFactorEnabled;
+    private int mEaseFactorMinRev;
+    private double mEaseFactorTargetRate;
     // Android WebView
     protected boolean mSpeakText;
     protected boolean mDisableClipboard = false;
@@ -1776,6 +1779,9 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mCustomButtons.put(R.id.action_delete, Integer.parseInt(preferences.getString("customButtonDelete", Integer.toString(MenuItem.SHOW_AS_ACTION_NEVER))));
 
         mTwoButtonModeEnabled = preferences.getBoolean("twoButtonMode", false);
+        mAutoAdjustEaseFactorEnabled = preferences.getBoolean("autoAdjustEaseFactor", false);
+        mEaseFactorMinRev = preferences.getInt("easeFactorMinRev", 4);
+        mEaseFactorTargetRate = preferences.getInt("easeFactorTargetRate", 85) / 100.0;
 
         if (preferences.getBoolean("keepScreenOn", false)) {
             this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -1938,6 +1944,80 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     }
 
 
+    private int getDeckEaseFactor() {
+        try {
+            return getConfigForCurrentCard().getJSONObject("new").optInt("initialFactor");
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    private int calcNewEaseFactor(double sRate, int avgFactor, int curFactor) {
+        if (sRate > 0.99) sRate = 0.99; // ln(1) = 0 => division by zero
+        if (sRate < 0.01) sRate = 0.01; // ln(0) = -inf
+
+        double dRatio = Math.log(mEaseFactorTargetRate) / Math.log(sRate);
+        int newFactor = (int) Math.round(avgFactor * dRatio);
+
+        // Limit the ease factor change to 20%
+        int max = (int) Math.round(curFactor * 1.2);
+        int min = (int) Math.round(curFactor * 0.8);
+        if (newFactor > max) newFactor = max;
+        if (newFactor < min) newFactor = min;
+
+        return newFactor;
+    }
+
+
+    private int getNewEaseFactor() {
+        if (!mAutoAdjustEaseFactorEnabled){
+            return getDeckEaseFactor();
+        }
+
+        int curFactor = mCurrentCard.getFactor();
+        int cardQueue = mCurrentCard.getQueue();
+
+        if (cardQueue != 2) {
+            Timber.d("Card not in review queue");
+            return curFactor;
+        }
+
+        long cardId = mCurrentCard.getId();
+
+        int numReviews = getCol().getDb().queryScalar(
+                "SELECT count() FROM revlog WHERE type = 1 and cid = " + cardId);
+
+        if (numReviews == 0 || numReviews < mEaseFactorMinRev) {
+            Timber.d("Number of reviews below threshold (current reviews: %d)", numReviews);
+            return curFactor;
+        }
+
+        int numCorrect = getCol().getDb().queryScalar(
+                "SELECT count() FROM revlog WHERE type = 1 and cid = " + cardId + " and ease > 1");
+
+        int avgFactor = getCol().getDb().queryScalar(
+                "SELECT round(avg(1000*ivl/lastIvl)) FROM revlog WHERE " +
+                "type = 1 and cid = " + cardId + " and lastIvl > 0 and ivl > 0 group by cid");
+
+        double sRate = numCorrect * 1.0 /  numReviews;
+        int newFactor = calcNewEaseFactor(sRate, avgFactor, curFactor);
+
+        // Quick sanity checks
+        if (sRate < mEaseFactorTargetRate && newFactor > curFactor) {
+            newFactor = curFactor; // if under target, decrease factor only
+        }
+        if (sRate > mEaseFactorTargetRate && newFactor < curFactor) {
+            newFactor = curFactor; // if over target, increase factor only
+        }
+
+        Timber.d("cardId: %d\nsRate: %.2f\navgFactor: %d\ncurFactor: %d\nnewFactor: %d",
+                cardId, sRate, avgFactor, curFactor, newFactor);
+
+        return newFactor;
+    }
+
+
     protected void displayCardQuestion() {
         Timber.d("displayCardQuestion()");
         sDisplayAnswer = false;
@@ -1981,15 +2061,15 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
             }
         }
 
-        // If two button mode is enabled we reset the ease factor,
-        // so that hitting the again button doesn't result in a penalty
         if (mTwoButtonModeEnabled) {
-            try {
-                int factor = getConfigForCurrentCard().getJSONObject("new").optInt("initialFactor");
-                Timber.i("TwoButtonMode enabled, resetting the card ease factor to %d", factor);
-                mCurrentCard.setFactor(factor);
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
+            int oldFactor = mCurrentCard.getFactor();
+            int newFactor = getNewEaseFactor();
+            if (oldFactor == newFactor) {
+                Timber.i("Card ease factor not modified");
+            } else {
+                Timber.i("Modifying the card ease factor based on the %s (old = %d, new = %d)",
+                        mAutoAdjustEaseFactorEnabled ? "review history" : "decks default", oldFactor, newFactor);
+                mCurrentCard.setFactor(newFactor);
             }
         }
 

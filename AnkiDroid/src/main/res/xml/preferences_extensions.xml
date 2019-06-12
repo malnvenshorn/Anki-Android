@@ -2,18 +2,45 @@
 
 <!-- Extension Preferences -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:app="http://arbitrary.app.namespace/com.ichi2.anki"
                   android:title="@string/pref_cat_extensions"
                   android:summary="@string/pref_cat_extensions_summ"
                   android:key="pref_screen_extensions">
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="randomizedReviews"
-        android:summary="@string/ext_randomized_reviews_summ"
-        android:title="@string/ext_randomized_reviews"
-        />
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="twoButtonMode"
-        android:summary="@string/ext_two_button_mode_summ"
-        android:title="@string/ext_two_button_mode" />
+    <PreferenceCategory android:title="@string/pref_cat_extensions_reviews">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="randomizedReviews"
+            android:summary="@string/ext_randomized_reviews_summ"
+            android:title="@string/ext_randomized_reviews"
+            />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="twoButtonMode"
+            android:summary="@string/ext_two_button_mode_summ"
+            android:title="@string/ext_two_button_mode" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_cat_extensions_ease_factor">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="autoAdjustEaseFactor"
+            android:dependency="twoButtonMode"
+            android:summary="@string/ext_auto_adjust_ease_factor_summ"
+            android:title="@string/ext_auto_adjust_ease_factor" />
+        <com.ichi2.preferences.NumberRangePreference
+            android:key="easeFactorMinRev"
+            android:dependency="autoAdjustEaseFactor"
+            android:title="@string/ext_ease_factor_min_reviews"
+            android:defaultValue="4"
+            app:max="99"
+            app:min="1" />
+        <com.ichi2.ui.SeekBarPreference
+            android:key="easeFactorTargetRate"
+            android:dependency="autoAdjustEaseFactor"
+            android:title="@string/ext_ease_factor_target_rate"
+            android:summary="@string/ext_ease_factor_target_rate_summ"
+            android:defaultValue="85"
+            app:interval="5"
+            android:max="100"
+            app:min="50" />
+    </PreferenceCategory>
 </PreferenceScreen>
