@@ -21,14 +21,17 @@ package com.ichi2.libanki;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.Typeface;
+import android.preference.PreferenceManager;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.style.StyleSpan;
 
+import com.ichi2.anki.AnkiDroidApp;
 import com.ichi2.anki.R;
 import com.ichi2.libanki.hooks.Hooks;
 
@@ -132,7 +135,9 @@ public class SchedV2 extends Sched {
         if (!mHaveQueues) {
             reset();
         }
-        Card card = _getCard();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(AnkiDroidApp.getAppContext());
+        boolean randomizedReviews = prefs.getBoolean("randomizedReviews", false);
+        Card card = randomizedReviews ? _getCardRandomized() : _getCard();
         if (card != null) {
             mCol.log(card);
             if (!mBurySiblingsOnAnswer) {
@@ -567,6 +572,55 @@ public class SchedV2 extends Sched {
     }
 
 
+    private Card _getCardRandomized() {
+        // Make sure queues are filled
+        _fillNew();
+        _fillRev();
+        _fillLrnDayRandomized();
+
+        // Learning card due?
+        Card card = _getLrnCard();
+        if (card != null) return card;
+
+        // Get spread setting of new cards
+        int newSpread;
+        try {
+            newSpread = mCol.getConf().getInt("newSpread");
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        // New cards first?
+        if (newSpread == Consts.NEW_CARDS_FIRST) {
+            card = _getNewCard();
+            if (card != null) return card;
+        }
+
+        // Randomized card from lrnDayQueue, revQueue and newQueue (if the relevant setting is set)
+        int newCardCount = (newSpread == Consts.NEW_CARDS_DISTRIBUTE) ? mNewQueue.size() : 0;
+        int totalCount = newCardCount + mRevQueue.size() + mLrnDayQueue.size();
+        if (totalCount > 0) {
+            Random r = new Random();
+            int rNum = r.nextInt(totalCount) + 1;
+            if (rNum <= newCardCount) {
+                card = _getNewCard();
+            } else if (rNum <= newCardCount + mRevQueue.size()) {
+                card = _getRevCard();
+            } else {
+                card = _getLrnDayCard();
+            }
+            if (card != null) return card;
+        }
+
+        // New cards left?
+        card = _getNewCard();
+        if (card != null) return card;
+
+        // collapse or finish
+        return _getLrnCard(true);
+    }
+
+
     /**
      * New cards **************************************************************** *******************************
      */
@@ -921,8 +975,48 @@ public class SchedV2 extends Sched {
     }
 
 
+    // daily learning randomized
+    private boolean _fillLrnDayRandomized() {
+        if (mLrnCount == 0) {
+            return false;
+        }
+        if (!mLrnDayQueue.isEmpty()) {
+            return true;
+        }
+
+        mLrnDayQueue.clear();
+        Cursor cur = null;
+        try {
+            cur = mCol
+                    .getDb()
+                    .getDatabase()
+                    .query(
+                            "SELECT id FROM cards WHERE did IN " + _deckLimit() + " AND queue = 3 AND due <= " + mToday
+                                    + " LIMIT " + mQueueLimit, null);
+            while (cur.moveToNext()) {
+                mLrnDayQueue.add(cur.getLong(0));
+            }
+        } finally {
+            if (cur != null && !cur.isClosed()) {
+                cur.close();
+            }
+        }
+        if (mLrnDayQueue.size() > 0) {
+            // order
+            Random r = new Random();
+            r.setSeed(mToday);
+            Collections.shuffle(mLrnDayQueue, r);
+            return true;
+        }
+
+        return false;
+    }
+
+
     private Card _getLrnDayCard() {
-        if (_fillLrnDay()) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(AnkiDroidApp.getAppContext());
+        boolean randomizedReviews = prefs.getBoolean("randomizedReviews", false);
+        if (randomizedReviews ? _fillLrnDayRandomized() : _fillLrnDay()) {
             mLrnCount -= 1;
             return mCol.getCard(mLrnDayQueue.remove());
         }

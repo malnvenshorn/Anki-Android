@@ -7,6 +7,12 @@
                   android:key="pref_screen_extensions">
     <CheckBoxPreference
         android:defaultValue="false"
+        android:key="randomizedReviews"
+        android:summary="@string/ext_randomized_reviews_summ"
+        android:title="@string/ext_randomized_reviews"
+        />
+    <CheckBoxPreference
+        android:defaultValue="false"
         android:key="twoButtonMode"
         android:summary="@string/ext_two_button_mode_summ"
         android:title="@string/ext_two_button_mode" />

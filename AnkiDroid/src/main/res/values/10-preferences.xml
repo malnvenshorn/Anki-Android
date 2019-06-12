@@ -257,6 +257,8 @@
     <!-- extensions -->
     <string name="pref_cat_extensions">Extensions</string>
     <string name="pref_cat_extensions_summ">Features added by this fork</string>
+    <string name="ext_randomized_reviews">Randomized reviews</string>
+    <string name="ext_randomized_reviews_summ">Randomized display of learning and review cards (only works with v2 scheduler)</string>
     <string name="ext_two_button_mode">Two button mode</string>
     <string name="ext_two_button_mode_summ">Remove the hard and easy button (also disables the ease factor penalty when selecting hard)</string>
 "</resources>

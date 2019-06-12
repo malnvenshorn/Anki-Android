@@ -281,6 +281,10 @@ public class AnkiDroidApp extends Application {
         return sInstance.getResources();
     }
 
+    public static Context getAppContext() {
+        return sInstance.getApplicationContext();
+    }
+
 
     public static boolean isSdCardMounted() {
         return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
