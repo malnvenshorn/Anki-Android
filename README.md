@@ -6,3 +6,4 @@ Additional Features
 -------
 
 * Two button mode (showing only the _good_ and _again_ button)
+* Randomized reviews (randomizes learning and review cards when using the v2 scheduler)
