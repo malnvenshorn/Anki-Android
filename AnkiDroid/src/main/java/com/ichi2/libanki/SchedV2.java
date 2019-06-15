@@ -989,7 +989,7 @@ public class SchedV2 extends Sched {
                     .getDatabase()
                     .query(
                             "SELECT id FROM cards WHERE did IN " + _deckLimit() + " AND queue = 3 AND due <= " + mToday
-                                    + " LIMIT " + mQueueLimit, null);
+                                    + " ORDER BY due LIMIT " + mQueueLimit, null);
             while (cur.moveToNext()) {
                 mLrnDayQueue.add(cur.getLong(0));
             }
