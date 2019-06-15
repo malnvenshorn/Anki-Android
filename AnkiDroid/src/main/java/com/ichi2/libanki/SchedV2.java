@@ -84,6 +84,7 @@ public class SchedV2 extends Sched {
 
     private int mNewCount;
     private int mLrnCount;
+    private int mLrnDayCount;
     private int mRevCount;
 
     private int mNewCardModulus;
@@ -573,11 +574,6 @@ public class SchedV2 extends Sched {
 
 
     private Card _getCardRandomized() {
-        // Make sure queues are filled
-        _fillNew();
-        _fillRev();
-        _fillLrnDayRandomized();
-
         // Learning card due?
         Card card = _getLrnCard();
         if (card != null) return card;
@@ -597,14 +593,14 @@ public class SchedV2 extends Sched {
         }
 
         // Randomized card from lrnDayQueue, revQueue and newQueue (if the relevant setting is set)
-        int newCardCount = (newSpread == Consts.NEW_CARDS_DISTRIBUTE) ? mNewQueue.size() : 0;
-        int totalCount = newCardCount + mRevQueue.size() + mLrnDayQueue.size();
+        int newCardCount = (newSpread == Consts.NEW_CARDS_DISTRIBUTE) ? mNewCount : 0;
+        int totalCount = newCardCount + mRevCount + mLrnDayCount;
         if (totalCount > 0) {
             Random r = new Random();
             int rNum = r.nextInt(totalCount) + 1;
             if (rNum <= newCardCount) {
                 card = _getNewCard();
-            } else if (rNum <= newCardCount + mRevQueue.size()) {
+            } else if (rNum <= newCardCount + mRevCount) {
                 card = _getRevCard();
             } else {
                 card = _getLrnDayCard();
@@ -842,8 +838,9 @@ public class SchedV2 extends Sched {
                 + " AND queue = 1 AND due < " + mLrnCutoff);
 
         // day
-        mLrnCount += mCol.getDb().queryScalar(
+        mLrnDayCount = mCol.getDb().queryScalar(
                 "SELECT count() FROM cards WHERE did IN " + _deckLimit() + " AND queue = 3 AND due <= " + mToday);
+        mLrnCount += mLrnDayCount;
 
         // previews
         mLrnCount += mCol.getDb().queryScalar(
@@ -1018,6 +1015,7 @@ public class SchedV2 extends Sched {
         boolean randomizedReviews = prefs.getBoolean("randomizedReviews", false);
         if (randomizedReviews ? _fillLrnDayRandomized() : _fillLrnDay()) {
             mLrnCount -= 1;
+            mLrnDayCount -= 1;
             return mCol.getCard(mLrnDayQueue.remove());
         }
         return null;
