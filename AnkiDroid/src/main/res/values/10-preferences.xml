@@ -266,6 +266,6 @@
     <string name="ext_auto_adjust_ease_factor">Auto adjust ease factor</string>
     <string name="ext_auto_adjust_ease_factor_summ">Automatically modifies the ease factor based on past reviews to target a specified success rate</string>
     <string name="ext_ease_factor_min_reviews">Minimum reviews</string>
-    <string name="ext_ease_factor_target_rate">Target retention rate</string>
+    <string name="ext_ease_factor_target_rate">Target success rate</string>
     <string name="ext_ease_factor_target_rate_summ">XXX %</string>
 "</resources>
