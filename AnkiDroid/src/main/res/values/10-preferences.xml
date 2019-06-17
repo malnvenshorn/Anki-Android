@@ -268,4 +268,6 @@
     <string name="ext_ease_factor_min_reviews">Minimum reviews</string>
     <string name="ext_ease_factor_target_rate">Target success rate</string>
     <string name="ext_ease_factor_target_rate_summ">XXX %</string>
+    <string name="ext_show_progress_bar">Show progress bar</string>
+    <string name="ext_show_progress_bar_summ">Show review progress bar</string>
 "</resources>

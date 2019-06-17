@@ -9,6 +9,11 @@
     <PreferenceCategory android:title="@string/pref_cat_extensions_reviews">
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="showProgressBar"
+            android:summary="@string/ext_show_progress_bar_summ"
+            android:title="@string/ext_show_progress_bar" />
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="randomizedReviews"
             android:summary="@string/ext_randomized_reviews_summ"
             android:title="@string/ext_randomized_reviews"
