@@ -86,6 +86,7 @@ public class SchedV2 extends Sched {
     private int mLrnCount;
     private int mLrnDayCount;
     private int mRevCount;
+    private int mScheduledTodayCount; // Not in libanki
 
     private int mNewCardModulus;
 
@@ -837,6 +838,10 @@ public class SchedV2 extends Sched {
                 "SELECT count() FROM cards WHERE did IN " + _deckLimit()
                 + " AND queue = 1 AND due < " + mLrnCutoff);
 
+        mScheduledTodayCount = mCol.getDb().queryScalar(
+                "SELECT count() FROM cards WHERE did IN " + _deckLimit()
+                        + " AND queue = 1 AND due >= " + mLrnCutoff);
+
         // day
         mLrnDayCount = mCol.getDb().queryScalar(
                 "SELECT count() FROM cards WHERE did IN " + _deckLimit() + " AND queue = 3 AND due <= " + mToday);
@@ -1125,6 +1130,8 @@ public class SchedV2 extends Sched {
                         card.setDue(Math.max(card.getDue(), smallestDue + 1));
                     }
                     _sortIntoLrn(card.getDue(), card.getId());
+                } else {
+                    mScheduledTodayCount +=1;
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -2858,4 +2865,28 @@ public class SchedV2 extends Sched {
         mContextReference = contextReference;
     }
 
+
+    /**
+     * Number of all cards for the current deck that are already done for today.
+     */
+    public int doneCountForCurrentDeck() {
+        return mCol.getDb().queryScalar(
+            "SELECT " +
+            "   count(DISTINCT revlog.cid) " +
+            "FROM " +
+            "   revlog JOIN cards ON " +
+            "   revlog.cid = cards.id " +
+            "WHERE " +
+            "   revlog.id > " + (getDayCutoff() - 86400) * 1000 + " AND " +
+            "   cards.did in " + _deckLimit() + " AND " +
+            "   cards.queue in (2,3)");
+    }
+
+
+    /**
+     * Number of cards for the current deck that are scheduled for today but not due yet.
+     */
+    public int scheduledTodayCountForCurrentDeck() {
+        return mScheduledTodayCount;
+    }
 }

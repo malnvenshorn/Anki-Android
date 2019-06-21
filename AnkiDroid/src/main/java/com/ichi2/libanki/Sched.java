@@ -2507,6 +2507,22 @@ public class Sched {
 
 
     /**
+     * Number of all cards for the current deck that are already done for today.
+     */
+    public int doneCountForCurrentDeck() {
+        return 0;
+    }
+
+
+    /**
+     * Number of cards for the current deck that are scheduled for today but not due yet.
+     */
+    public int scheduledTodayCountForCurrentDeck() {
+        return 0;
+    }
+
+
+    /**
      * Holds the data for a single node (row) in the deck due tree (the user-visible list
      * of decks and their counts). A node also contains a list of nodes that refer to the
      * next level of sub-decks for that particular deck (which can be an empty list).

@@ -69,6 +69,7 @@ import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -200,6 +201,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     private boolean mAutoAdjustEaseFactorEnabled;
     private int mEaseFactorMinRev;
     private double mEaseFactorTargetRate;
+    private  boolean mShowReviewProgressBar;
     // Android WebView
     protected boolean mSpeakText;
     protected boolean mDisableClipboard = false;
@@ -257,6 +259,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     protected Whiteboard mWhiteboard;
     @SuppressWarnings("deprecation") // Tracked separately as #5023 on github
     private android.text.ClipboardManager mClipboard;
+    private ProgressBar mReviewProgressBar;
 
     protected Card mCurrentCard;
     private int mCurrentEase;
@@ -869,6 +872,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         Lookup.initialize(this);
 
         updateScreenCounts();
+        initProgressBar();
         supportInvalidateOptionsMenu();
     }
 
@@ -900,6 +904,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         // Reset the activity title
         setTitle();
         updateScreenCounts();
+        updateProgressBar();
         selectNavigationItem(-1);
     }
 
@@ -1035,6 +1040,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
            note type could have lead to the card being deleted */
         if (data != null && data.hasExtra("reloadRequired")) {
             getCol().getSched().reset();
+            initProgressBar();
             DeckTask.launchDeckTask(DeckTask.TASK_TYPE_ANSWER_CARD, mAnswerCardHandler,
                     new DeckTask.TaskData(null, 0));
         }
@@ -1051,6 +1057,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
             }
         } else if (requestCode == DECK_OPTIONS && resultCode == RESULT_OK) {
             getCol().getSched().reset();
+            initProgressBar();
             DeckTask.launchDeckTask(DeckTask.TASK_TYPE_ANSWER_CARD, mAnswerCardHandler,
                     new DeckTask.TaskData(null, 0));
         }
@@ -1369,6 +1376,13 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
             params = mEase4Layout.getLayoutParams();
             params.height = params.height * mRelativeButtonSize / 100;
             mButtonHeightSet = true;
+        }
+
+        mReviewProgressBar = findViewById(R.id.review_progress_bar);
+
+        if (mShowReviewProgressBar) {
+            mReviewProgressBar.setVisibility(View.VISIBLE);
+            mReviewProgressBar.setMax(-1);
         }
 
         mTextBarNew = (TextView) findViewById(R.id.new_number);
@@ -1782,6 +1796,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mAutoAdjustEaseFactorEnabled = preferences.getBoolean("autoAdjustEaseFactor", false);
         mEaseFactorMinRev = preferences.getInt("easeFactorMinRev", 4);
         mEaseFactorTargetRate = preferences.getInt("easeFactorTargetRate", 85) / 100.0;
+        mShowReviewProgressBar = preferences.getBoolean("showProgressBar", false);
 
         if (preferences.getBoolean("keepScreenOn", false)) {
             this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -1830,6 +1845,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
 
     private void updateForNewCard() {
         updateScreenCounts();
+        updateProgressBar();
 
         // Clean answer field
         if (typeAnswer()) {
@@ -1885,6 +1901,35 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mTextBarNew.setText(newCount);
         mTextBarLearn.setText(lrnCount);
         mTextBarReview.setText(revCount);
+    }
+
+    protected void initProgressBar() {
+        int[] counts = mSched.counts();
+        int dueCount = counts[0] + counts[1] + counts [2];
+        int scheduledCount = mSched.scheduledTodayCountForCurrentDeck();
+        int doneCount = mSched.doneCountForCurrentDeck();
+        int max = dueCount + doneCount + scheduledCount;
+
+        Timber.d("ProgressBar: set new max to %d", max);
+        Timber.d("ProgressBar: done = %d, due = %d, scheduled = %d", doneCount, dueCount, scheduledCount);
+
+        mReviewProgressBar.setMax(max);
+    }
+
+    protected void updateProgressBar() {
+        if (mCurrentCard == null) return;
+
+        int[] counts = mSched.counts(mCurrentCard);
+        int dueCount = counts[0] + counts[1] + counts [2];
+        int scheduledCount = mSched.scheduledTodayCountForCurrentDeck();
+        int totalDueCount = mReviewProgressBar.getMax() - scheduledCount;
+        int progress = totalDueCount - dueCount;
+
+        Timber.d("ProgressBar: update progress");
+        Timber.d("ProgressBar: done = %d, due = %d, scheduled = %d", progress, dueCount, scheduledCount);
+
+        mReviewProgressBar.setSecondaryProgress(totalDueCount);
+        mReviewProgressBar.setProgress(progress);
     }
 
     /*
