@@ -7,3 +7,7 @@ Special thanks goes to [eshapard](https://eshapard.github.io/) and his thoughts 
 * Two button mode (showing only the good and again button)
 * Randomized reviews (randomizes learning and review cards when using the v2 scheduler)
 * Auto adjust ease factor (automatically modifies the ease factor based on past reviews to target a specific success rate)
+
+**Planned**
+
+* Progress bar of today's cards showing reviewed cards, currently due cards and cards that are due later this day
