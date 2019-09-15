@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -69,6 +70,7 @@ public class StudyOptionsFragment extends Fragment implements Toolbar.OnMenuItem
      * Preferences
      */
     private int mCurrentContentView = CONTENT_STUDY_OPTIONS;
+    private boolean mShowReviewProgressBar;
 
     /** Alerts to inform the user about different situations */
     private MaterialDialog mProgressDialog;
@@ -89,6 +91,7 @@ public class StudyOptionsFragment extends Fragment implements Toolbar.OnMenuItem
     private TextView mTextETA;
     private TextView mTextCongratsMessage;
     private Toolbar mToolbar;
+    private ProgressBar mReviewProgressBar;
 
     // Flag to indicate if the fragment should load the deck options immediately after it loads
     private boolean mLoadWithDeckOptions;
@@ -264,6 +267,12 @@ public class StudyOptionsFragment extends Fragment implements Toolbar.OnMenuItem
         mTextTotal = (TextView) mStudyOptionsView.findViewById(R.id.studyoptions_total);
         mTextETA = (TextView) mStudyOptionsView.findViewById(R.id.studyoptions_eta);
         mButtonStart.setOnClickListener(mButtonClickListener);
+
+        mReviewProgressBar = mStudyOptionsView.findViewById(R.id.review_progress_bar);
+
+        if (mShowReviewProgressBar) {
+            mReviewProgressBar.setVisibility(View.VISIBLE);
+        }
     }
 
 
@@ -463,6 +472,7 @@ public class StudyOptionsFragment extends Fragment implements Toolbar.OnMenuItem
 
     public SharedPreferences restorePreferences() {
         SharedPreferences preferences = AnkiDroidApp.getSharedPrefs(getActivity().getBaseContext());
+        mShowReviewProgressBar = preferences.getBoolean("showProgressBar", false);
         return preferences;
     }
 
@@ -600,6 +610,16 @@ public class StudyOptionsFragment extends Fragment implements Toolbar.OnMenuItem
                     } else {
                         mTextDeckDescription.setVisibility(View.GONE);
                     }
+
+                    // Set review progress bar
+                    int dueCount = newCards + lrnCards + revCards;
+                    int scheduledCount = getCol().getSched().scheduledTodayCountForCurrentDeck();
+                    int doneCount = getCol().getSched().doneCountForCurrentDeck();
+                    int max = dueCount + doneCount + scheduledCount;
+                    mReviewProgressBar.setMax(max);
+                    mReviewProgressBar.setProgress(doneCount);
+                    mReviewProgressBar.setSecondaryProgress(max - scheduledCount);
+                    Timber.d("Review progress (due: %d, done: %d, scheduled: %d)", dueCount, doneCount, scheduledCount);
 
                     // Set new/learn/review card counts
                     mTextTodayNew.setText(String.valueOf(newCards));
