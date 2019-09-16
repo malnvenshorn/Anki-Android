@@ -270,4 +270,6 @@
     <string name="ext_ease_factor_target_rate_summ">XXX %</string>
     <string name="ext_show_progress_bar">Show progress bar</string>
     <string name="ext_show_progress_bar_summ">Show review progress bar</string>
+    <string name="ext_hide_default_bar">Hide default bar</string>
+    <string name="ext_hide_default_bar_summ">Hide the default reviewer bar</string>
 "</resources>

@@ -14,6 +14,11 @@
             android:title="@string/ext_show_progress_bar" />
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="hideDefaultBar"
+            android:summary="@string/ext_hide_default_bar_summ"
+            android:title="@string/ext_hide_default_bar" />
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="randomizedReviews"
             android:summary="@string/ext_randomized_reviews_summ"
             android:title="@string/ext_randomized_reviews"

@@ -201,7 +201,8 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
     private boolean mAutoAdjustEaseFactorEnabled;
     private int mEaseFactorMinRev;
     private double mEaseFactorTargetRate;
-    private  boolean mShowReviewProgressBar;
+    private boolean mShowReviewProgressBar;
+    private boolean mHideDefaultBar;
     // Android WebView
     protected boolean mSpeakText;
     protected boolean mDisableClipboard = false;
@@ -1385,6 +1386,10 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
             mReviewProgressBar.setMax(-1);
         }
 
+        if(mHideDefaultBar) {
+            mTopBarLayout.setVisibility(View.GONE);
+        }
+
         mTextBarNew = (TextView) findViewById(R.id.new_number);
         mTextBarLearn = (TextView) findViewById(R.id.learn_number);
         mTextBarReview = (TextView) findViewById(R.id.review_number);
@@ -1797,6 +1802,7 @@ public abstract class AbstractFlashcardViewer extends NavigationDrawerActivity {
         mEaseFactorMinRev = preferences.getInt("easeFactorMinRev", 4);
         mEaseFactorTargetRate = preferences.getInt("easeFactorTargetRate", 85) / 100.0;
         mShowReviewProgressBar = preferences.getBoolean("showProgressBar", false);
+        mHideDefaultBar = preferences.getBoolean("hideDefaultBar", false);
 
         if (preferences.getBoolean("keepScreenOn", false)) {
             this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
