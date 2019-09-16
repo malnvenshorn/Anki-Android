@@ -2521,6 +2521,21 @@ public class Sched {
         return 0;
     }
 
+    /**
+     * Number of all cards for the entire collection that are already done for today.
+     */
+    public int doneCountForCollection() {
+        return 0;
+    }
+
+
+    /**
+     * Number of cards for the entire collection that are scheduled for today but not due yet.
+     */
+    public int scheduledTodayCountForCollection() {
+        return 0;
+    }
+
 
     /**
      * Holds the data for a single node (row) in the deck due tree (the user-visible list

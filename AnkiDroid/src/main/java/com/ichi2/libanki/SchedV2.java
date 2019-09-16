@@ -2889,4 +2889,36 @@ public class SchedV2 extends Sched {
     public int scheduledTodayCountForCurrentDeck() {
         return mScheduledTodayCount;
     }
+
+
+    /**
+     * Number of all cards for the entire collection that are already done for today.
+     */
+    public int doneCountForCollection() {
+        return mCol.getDb().queryScalar(
+            "SELECT " +
+            "   count(DISTINCT revlog.cid) " +
+            "FROM " +
+            "   revlog JOIN cards ON " +
+            "   revlog.cid = cards.id " +
+            "WHERE " +
+            "   revlog.id > " + (getDayCutoff() - 86400) * 1000 + " AND " +
+            "   cards.queue in (2,3)");
+    }
+
+
+    /**
+     * Number of cards for the entire collection that are scheduled for today but not due yet.
+     */
+    public int scheduledTodayCountForCollection() {
+        return mCol.getDb().queryScalar(
+            "SELECT " +
+            "   count(DISTINCT revlog.cid) " +
+            "FROM " +
+            "   revlog JOIN cards ON " +
+            "   revlog.cid = cards.id " +
+            "WHERE " +
+            "   cards.due >= " + mLrnCutoff + " AND " +
+            "   cards.queue = 1");
+    }
 }

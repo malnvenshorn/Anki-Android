@@ -11,12 +11,17 @@
 
         <include layout="@layout/toolbar" />
 
+        <include layout="@layout/reviewer_topbar_progress"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_below="@+id/toolbar" />
+
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/pull_to_sync_wrapper"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_above="@+id/today_stats_text_view"
-            android:layout_below="@+id/toolbar">
+            android:layout_below="@+id/progress_bar_layout">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/files"

@@ -62,6 +62,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -152,6 +153,9 @@ public class DeckPicker extends NavigationDrawerActivity implements
 
     private static final int SWIPE_TO_SYNC_TRIGGER_DISTANCE = 400;
 
+    private boolean mShowReviewProgressBar;
+
+    private ProgressBar mReviewProgressBar;
     private MaterialDialog mProgressDialog;
     private View mStudyoptionsFrame;
     private RecyclerView mRecyclerView;
@@ -440,6 +444,13 @@ public class DeckPicker extends NavigationDrawerActivity implements
                     showDatabaseErrorDialog(DatabaseErrorDialog.DIALOG_LOAD_FAILED);
                 }
             }
+        }
+
+        mShowReviewProgressBar = preferences.getBoolean("showProgressBar", false);
+        mReviewProgressBar = findViewById(R.id.review_progress_bar);
+
+        if (mShowReviewProgressBar) {
+            mReviewProgressBar.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1996,6 +2007,19 @@ public class DeckPicker extends NavigationDrawerActivity implements
 
                 // Update the mini statistics bar as well
                 AnkiStatsTaskHandler.createReviewSummaryStatistics(getCol(), mReviewSummaryTextView);
+
+                // Set review progress bar
+                int dueCount = 0;
+                for (Sched.DeckDueTreeNode node : nodes) {
+                    dueCount += node.newCount + node.lrnCount + node.revCount;
+                }
+                int scheduledCount = getCol().getSched().scheduledTodayCountForCollection();
+                int doneCount = getCol().getSched().doneCountForCollection();
+                int max = dueCount + doneCount + scheduledCount;
+                mReviewProgressBar.setMax(max);
+                mReviewProgressBar.setProgress(doneCount);
+                mReviewProgressBar.setSecondaryProgress(max - scheduledCount);
+                Timber.d("Review progress (due: %d, done: %d, scheduled: %d)", dueCount, doneCount, scheduledCount);
             }
         });
     }
