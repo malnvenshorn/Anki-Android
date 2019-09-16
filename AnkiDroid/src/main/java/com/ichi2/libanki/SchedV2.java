@@ -2911,14 +2911,18 @@ public class SchedV2 extends Sched {
      * Number of cards for the entire collection that are scheduled for today but not due yet.
      */
     public int scheduledTodayCountForCollection() {
-        return mCol.getDb().queryScalar(
-            "SELECT " +
-            "   count(DISTINCT revlog.cid) " +
-            "FROM " +
-            "   revlog JOIN cards ON " +
-            "   revlog.cid = cards.id " +
-            "WHERE " +
-            "   cards.due >= " + mLrnCutoff + " AND " +
-            "   cards.queue = 1");
+        try {
+            return mCol.getDb().queryScalar(
+                "SELECT " +
+                "   count(DISTINCT revlog.cid) " +
+                "FROM " +
+                "   revlog JOIN cards ON " +
+                "   revlog.cid = cards.id " +
+                "WHERE " +
+                "   cards.due >= " + (Utils.intNow() + mCol.getConf().getInt("collapseTime")) + " AND " +
+                "   cards.queue = 1");
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
